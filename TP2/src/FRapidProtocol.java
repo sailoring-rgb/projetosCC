@@ -10,70 +10,38 @@ import java.util.Map;
 
 // Classe que implementa o protocolo UDP
 
-public class FTRapidProtocol {
+public class FTRapidProtocol implements Runnable{
+    private final DatagramSocket socket;
+    private final ClientHandler client;
 
-    private DatagramSocket socket;
-    private String serverHost;
-    private int serverPort;
+    public FTRapidProtocol(ClientHandler client) throws IOException{
+        System.out.println("Listening in UDP " + serverPort);
+        
+        while(true){
+            try{
+                // wait for UDP connection
+                DatagramPacket packet = new DatagramPacket(new byte[Packet.Max_Size],Packet.Max_Size);
+                socket.receive(packet);
+                byte[] buffer = new byte[packet.getLength()];
+                System.arraycopy(packet.getData(),0,buffer,0,packet.getLength());
 
-    public FTRapidProtocol(Datagram Socket socket, String serverHost, int serverPort){
-        this.socket = socket;
-        this.serverHost = serverHost;
-        this.serverPort = serverPort;
-    }
+                // parse datagram packet info
+                InetAddress address = packet.getAddress();
+                int serverPort = packet.getPort();
 
-    public int start() throws IOException{
-        // Packet pacote = new Packet((short) 0,1,0,0); ????????????????????????
-        InetAddress address = this.socket.getLocalAddress();
-        Host servidor = new Host(this.socket.getLocalPort(), address.getHostName());
-        // pacote.setData(sI.toBytes()); ????????????????????????
-        send(this.socket, this.serverHost, this.serverPort/*, pacote*/);
+                // parse packet data
+                // CRIAR CLASSE PACKET !!!!!!!!!!!!!!
+                Packet packetData = Serializer.Deserialize_Packet(buffer);
+                PacketType packetType = packet.getType();
 
-        // Definir um tempo máximo de espera do ACK
-        this.socket.setSoTimeout(60000);
-        // Packet ack = receive(s); ?????????????????????????????
-        // ...
-    }
+                if(packetType == PacketType.CONNECTION){
+                    System.out.println("UDP connection received");
 
-    public Host listen(DatagramSocket)
-/*
-    public static void main(String[] args) {
-
-        try {
-            InetAddress ipServer = InetAddress.getByName(args[0]);                       // receives the IP of the server
-            int port = Integer.parseInt(args[1]);                                        // recieves the port of the server
-            System.out.println("Conecting to: " +ipServer.toString() +":" +port);      
-            
-
-            DatagramSocket clientSocket = new DatagramSocket();                         // creates a socket - port not define - system gives an available port
-
-            // buffer to read from the console
-            BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
-            String lineFromConsole = reader.readLine();                                 // reading from the console
-
-            while (!lineFromConsole.equalsIgnoreCase("quit")) {
-                byte[] inBuffer = new byte[MTU];
-                byte[] outBuffer = new byte[MTU];
-
-                // from the console to the socket - sending a message
-                outBuffer = lineFromConsole.getBytes();
-                DatagramPacket outPacket = new DatagramPacket(outBuffer, outBuffer.length, ipServer, port);
-                clientSocket.send(outPacket);
-
-                // from the socket to the console - reading a message
-                DatagramPacket inPacket = new DatagramPacket(inBuffer, inBuffer.length);
-                clientSocket.receive(inPacket);
-                System.out.println(new String(inPacket.getData()));
-
-                lineFromConsole = reader.readLine();                                    // reading from console
+                    // establish UDP connection with server
+                    if(...)
+                }
             }
-            clientSocket.close();
-
-        } catch (Exception e) {
-            e.printStackTrace();
         }
     }
-
-    */
 }
 
