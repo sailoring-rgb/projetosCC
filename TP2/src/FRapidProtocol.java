@@ -10,7 +10,7 @@ import java.util.Map;
 
 // Classe que implementa o protocolo UDP
 
-public class FTRapidProtocol implements Runnable{
+/*public class FTRapidProtocol implements Runnable{
     private final DatagramSocket socket;
     private final ClientHandler client;
 
@@ -38,10 +38,12 @@ public class FTRapidProtocol implements Runnable{
                     System.out.println("UDP connection received");
 
                     // establish UDP connection with server
-                    if(...)
+                    //if(...)
                 }
             }
         }
     }
 }
 
+
+ */
