@@ -35,7 +35,10 @@ public class TCPConnection extends Thread{
             out.println("HTTP/1.1 200 OK");
             out.println("Content-Type: text/html");
             out.println("\r\n");
-            out.println("<p> OK </p>");
+            out.println("<div style='text-align: center;'>");
+            out.println("<h1>FT-Rapid</h1>");
+            out.println("<h3>Status: <span style='color: green'>Running</span></h3>");
+            out.println("</div>");
             out.flush();
             out.close();
         } catch (IOException e) {

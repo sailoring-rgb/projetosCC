@@ -6,9 +6,8 @@ import java.util.*;
 
 public class FileManager {
     File folder;
-    //Map<String, FileOutputStream> filesBeingReceived;
     Map<String, Map<Integer,FileChunk>> filesBeingReceived;
-    Map<String, List<FileChunk>> filesBeingSent;
+    Map<String, Map<Integer,FileChunk>> filesBeingSent;
 
     public FileManager(File folder) {
         this.folder = folder;
@@ -16,30 +15,41 @@ public class FileManager {
         this.filesBeingSent = new HashMap<>();
     }
 
-    public String[] getFileList() {
-        return this.folder.list();
+    public List<FileInfo> getFileList() {
+        List<FileInfo> fileInfoList = new ArrayList<>();
+        for(File f : folder.listFiles()) {
+            if(f.isFile()) {
+                FileInfo fileInfo = new FileInfo(f.getName(), f.length(), f.lastModified());
+                fileInfoList.add(fileInfo);
+            }
+        }
+        return fileInfoList;
     }
 
     //Get list of files that are missing/differ in size, and are not already being received
-    public String[] getFilesMissing(String[] fileList) {
-        List<String> filesMissing = new ArrayList<>();
-        String[] currentFileList = this.getFileList();
+    public List<FileInfo> getFilesMissing(List<FileInfo> fileList) {
+        List<FileInfo> filesMissing = new ArrayList<>();
+        List<FileInfo> currentFileList = this.getFileList();
 
         System.out.println("-> Compare file lists");
-        System.out.println("My Files: " + Arrays.toString(currentFileList));
-        System.out.println("Peer Files: " + Arrays.toString(fileList));
+        System.out.println("My Files: " + Arrays.toString(currentFileList.toArray()));
+        System.out.println("Peer Files: " + Arrays.toString(fileList.toArray()));
 
-        for(String fileName : fileList) {
+        for(FileInfo file : fileList) {
             boolean exist = false;
-            for(String myFile: currentFileList) {
-                if(fileName.equals(myFile)) {exist = true; break;}
+            String fileName = file.getName();
+            for(FileInfo myFile: currentFileList) {
+                String myFileName = myFile.getName();
+                if(fileName.equals(myFileName) && file.getSize() == myFile.getSize() && file.getLastModified() == file.getLastModified()) {
+                    exist = true;
+                    break;
+                }
             }
-            if(!exist && !this.filesBeingReceived.containsKey(fileName)) filesMissing.add(fileName);
+            if(!exist && !this.filesBeingReceived.containsKey(fileName)) filesMissing.add(file);
         }
 
-        String[] missing = new String[filesMissing.size()];
-        System.out.println("Files Missing: " + Arrays.toString(missing));
-        return filesMissing.toArray(missing);
+        System.out.println("Files Missing: " + Arrays.toString(filesMissing.toArray()));
+        return filesMissing;
     }
 
     public List<FileChunk> generateFileChunks(String filename) throws Exception {
@@ -47,11 +57,11 @@ public class FileManager {
 
         if(!file.exists() || file.isDirectory()) throw new Exception("File not found!");
 
-        int CHUNK_SIZE = 20;
+        int CHUNK_SIZE = 512;
         byte[] fileByteArray = readFileToByteArray(file);
         System.out.println(fileByteArray.length);
         List<FileChunk> dataChunks = new ArrayList<>();
-        int numChunks = (int) Math.ceil(fileByteArray.length / 20.0);
+        int numChunks = (int) Math.ceil(fileByteArray.length / 512.0);
         int chunkSequenceNumber = 1;
         for (int i = 0; i < fileByteArray.length; i = i + CHUNK_SIZE) {
             //byte[] chunk = new byte[CHUNK_SIZE];
@@ -63,7 +73,13 @@ public class FileManager {
             dataChunks.add(fileChunk);
             chunkSequenceNumber++;
         }
-        if(!this.filesBeingSent.containsKey(filename)) this.filesBeingSent.put(filename, dataChunks);
+        if(!this.filesBeingSent.containsKey(filename)) {
+            Map<Integer,FileChunk> chunks = new HashMap<>();
+            for(FileChunk chunk: dataChunks) {
+                chunks.put(chunk.getChunkSequenceNumber(), chunk);
+            }
+            this.filesBeingSent.put(filename, chunks);
+        }
         return dataChunks;
     }
 
@@ -83,27 +99,62 @@ public class FileManager {
         return bArray;
     }
 
-    public void addFileChunk(FileChunk fileChunk) throws Exception {
-        if(!filesBeingReceived.containsKey(fileChunk.getFileName())) {
+    public synchronized void addFileChunk(FileChunk fileChunk) throws Exception {
+        String fileName = fileChunk.getFileName();
+        if(!filesBeingReceived.containsKey(fileName)) {
             Map<Integer, FileChunk> chunkList = new HashMap<>();
             chunkList.put(fileChunk.getChunkSequenceNumber(), fileChunk);
-            filesBeingReceived.put(fileChunk.getFileName(), chunkList);
+            filesBeingReceived.put(fileName, chunkList);
         } else {
             //check duplicate
-            filesBeingReceived.get(fileChunk.getFileName()).put(fileChunk.getChunkSequenceNumber(), fileChunk);
-            System.out.println(filesBeingReceived.get(fileChunk.getFileName()).size() + " of " + fileChunk.getNumChunks());
-            if(filesBeingReceived.get(fileChunk.getFileName()).size() == fileChunk.getNumChunks()) {
-                System.out.println("FILE RECEIVED!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-                File file = new File(this.folder.getAbsolutePath() + "/" + fileChunk.getFileName());
-                //if(file.exists()) throw new Exception("File already exists!");
-                FileOutputStream outToFile = new FileOutputStream(file);
+            filesBeingReceived.get(fileName).put(fileChunk.getChunkSequenceNumber(), fileChunk);
+            System.out.println(filesBeingReceived.get(fileName).size() + " of " + fileChunk.getNumChunks());
+        }
+        this.createFile(fileName, fileChunk.getNumChunks());
+    }
 
-                SortedSet<Integer> keys = new TreeSet<>(filesBeingReceived.get(fileChunk.getFileName()).keySet());
-                for (Integer sequenceNumber : keys) {
-                    outToFile.write(filesBeingReceived.get(fileChunk.getFileName()).get(sequenceNumber).getData());
-                }
-                outToFile.close();
+    public void acknowledgeFileChunk(FileChunk chunk) {
+        String fileName = chunk.getFileName();
+        if(filesBeingSent.containsKey(fileName)) {
+            filesBeingSent.get(fileName).get(chunk.getChunkSequenceNumber()).acknowledge();
+        }
+    }
+
+    public boolean allFileChunksAcknowledged(String fileName) {
+        if(!filesBeingSent.containsKey(fileName)) return true;
+
+        for(FileChunk chunk : filesBeingSent.get(fileName).values()) {
+            if(!chunk.isAcknowledged()) return false;
+        }
+
+        return true;
+    }
+
+    public List<FileChunk> getFileChunksNotAcknowledged(String fileName) {
+        List<FileChunk> chunks = new ArrayList<>();
+
+        if(!filesBeingSent.containsKey(fileName)) return chunks;
+
+        for(FileChunk chunk : filesBeingSent.get(fileName).values()) {
+            if(!chunk.isAcknowledged()) chunks.add(chunk);
+        }
+
+        return chunks;
+    }
+
+    public synchronized void createFile(String fileName, int numChunks) throws Exception{
+        if(filesBeingReceived.get(fileName).size() == numChunks) {
+            System.out.println("-> FILE CREATED: " + fileName);
+            File file = new File(this.folder.getAbsolutePath() + "/" + fileName);
+            //if(file.exists()) throw new Exception("File already exists!");
+            FileOutputStream outToFile = new FileOutputStream(file);
+
+            SortedSet<Integer> keys = new TreeSet<>(filesBeingReceived.get(fileName).keySet());
+            for (Integer sequenceNumber : keys) {
+                outToFile.write(filesBeingReceived.get(fileName).get(sequenceNumber).getData());
             }
+            outToFile.close();
+            filesBeingReceived.remove(fileName);
         }
     }
 

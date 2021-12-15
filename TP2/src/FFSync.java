@@ -1,5 +1,4 @@
 import java.io.File;
-import java.io.IOException;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 
@@ -48,9 +47,9 @@ public class FFSync {
         File f = new File(args[0]);
         if(!f.exists()) {
             try {
-                f.createNewFile();
+                f.mkdirs();
                 System.out.println("Folder Created.");
-            } catch (IOException e) {
+            } catch (Exception e) {
                 System.out.println("ERROR: Folder directory invalid.");
                 return false;
             }

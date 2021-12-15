@@ -3,7 +3,7 @@ import java.net.DatagramSocket;
 
 public class FTRapidRead extends Thread{
     private final DatagramSocket socket;
-    private final byte[] buffer = new byte[512];
+    private final byte[] buffer = new byte[1024];
     private final FileManager fileManager;
 
     public FTRapidRead(DatagramSocket socket, FileManager fileManager) {

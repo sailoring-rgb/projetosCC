@@ -5,6 +5,7 @@ public class FileChunk implements Serializable {
     private final String fileName;
     private final int chunkSequenceNumber;
     private final int numChunks;
+    private boolean acknowledged;
 
     public FileChunk(byte[] data, String fileName, int chunkSequenceNumber, int numChunks) {
         this.data = data;
@@ -27,5 +28,13 @@ public class FileChunk implements Serializable {
 
     public int getNumChunks() {
         return this.numChunks;
+    }
+
+    public void acknowledge() {
+        this.acknowledged = true;
+    }
+
+    public boolean isAcknowledged() {
+        return this.acknowledged;
     }
 }

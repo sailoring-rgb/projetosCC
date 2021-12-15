@@ -1,15 +1,15 @@
-import java.io.File;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 
 public class FTRapidHandlePacket extends Thread{
     private final DatagramSocket socket;
     private final FileManager fileManager;
     private final InetAddress endIP;
     private final int endPort;
-    private FTRapidPacket ftPacket;
+    private final FTRapidPacket ftPacket;
 
     public FTRapidHandlePacket(DatagramSocket socket, FileManager fileManager, InetAddress endIP, int endPort, FTRapidPacket ftPacket) {
         this.socket = socket;
@@ -33,9 +33,9 @@ public class FTRapidHandlePacket extends Thread{
             //Received the list of files in the other system
             case "FileList":
                 //Compare the list with the current list on this system.
-                String[] filesMissing = fileManager.getFilesMissing(ftPacket.getFileList());
+                List<FileInfo> filesMissing = fileManager.getFilesMissing(ftPacket.getFileList());
                 //If there is no files missing, do nothing.
-                if (filesMissing.length == 0) break;
+                if (filesMissing.size() == 0) break;
                 //Else ask for files
                 responsePacket = new FTRapidPacket("RequestFiles", null, filesMissing, null, this.endIP, this.endPort);
                 sendPacket(responsePacket);
@@ -43,18 +43,34 @@ public class FTRapidHandlePacket extends Thread{
             //Received a files request
             case "RequestFiles":
                 //Send requested files
-                String[] requestedFileNames = ftPacket.getRequestFiles();
+                List<FileInfo> requestedFileNames = ftPacket.getRequestFiles();
                 try {
-                    for (String fileName: requestedFileNames) {
+                    for (FileInfo file: requestedFileNames) {
                         (new Thread() {
                             @Override
                             public void run() {
+                                String fileName = file.getName();
                                 try {
                                     List<FileChunk> fileChunks = fileManager.generateFileChunks(fileName);
+                                    //Start timer
                                     for (FileChunk chunk : fileChunks) {
                                         FTRapidPacket responsePacket = new FTRapidPacket("FileChunk", null, null, chunk, endIP, endPort);
-                                        sendPacket(responsePacket);
+                                        int random = ThreadLocalRandom.current().nextInt(1, 11);
+                                        if(random <= 8) sendPacket(responsePacket);
                                     }
+                                    //TIMEOUT and CHECK IF RECEIVED ALL AKS, IF NOT, RESEND
+                                    while(!fileManager.allFileChunksAcknowledged(fileName)) {
+                                        Thread.sleep(50);
+                                        System.out.println("WAITING FOR FILE: " + fileName);
+                                        List<FileChunk> notAckChunks = fileManager.getFileChunksNotAcknowledged(fileName);
+                                        for(FileChunk chunk : notAckChunks) {
+                                            System.out.println(chunk.getChunkSequenceNumber());
+                                            FTRapidPacket resendPacket = new FTRapidPacket("FileChunk", null, null, chunk, endIP, endPort);
+                                            sendPacket(resendPacket);
+                                        }
+                                    }
+                                    //Stop timer now or when we receive the last ack
+
                                 } catch (Exception e) {
                                     System.out.println("Error sending chunk");
                                 }
@@ -65,15 +81,21 @@ public class FTRapidHandlePacket extends Thread{
                     System.out.println(e.getMessage());
                 }
                 break;
-            //Received a file chunk
+            //Received a file chunk, send ACK
             case "FileChunk":
                 try {
-                    fileManager.addFileChunk(ftPacket.getFileChunk());
+                    FileChunk chunk = ftPacket.getFileChunk();
+                    fileManager.addFileChunk(chunk);
+                    FileChunk responseChunk = new FileChunk(null, chunk.getFileName(), chunk.getChunkSequenceNumber(), chunk.getNumChunks());
+                    responsePacket = new FTRapidPacket("Ack", null, null, responseChunk, endIP, endPort);
+                    sendPacket(responsePacket);
                 } catch (Exception e) {
                     System.out.println(e.getMessage());
                 }
                 break;
             //Unknown request
+            case "Ack":
+                fileManager.acknowledgeFileChunk(ftPacket.getFileChunk());
             default:
                 System.out.println("Type Unknown");
         }

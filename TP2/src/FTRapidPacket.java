@@ -1,18 +1,19 @@
 import java.io.*;
 import java.net.InetAddress;
 import java.util.Arrays;
+import java.util.List;
 
 public class FTRapidPacket implements Serializable {
     private String type;//Package type
-    private String[] fileList;// If type = 'FileList'
-    private String[] requestFiles;// If type = 'RequestFiles'
+    private List<FileInfo> fileList;// If type = 'FileList'
+    private List<FileInfo> requestFiles;// If type = 'RequestFiles'
     private FileChunk fileChunk;//If type = 'FileChunk'
     private InetAddress endIP;
     private int endPort;
 
     public FTRapidPacket(String type,
-                         String[] fileList,
-                         String[] requestFiles,
+                         List<FileInfo> fileList,
+                         List<FileInfo> requestFiles,
                          FileChunk fileChunk,
                          InetAddress endIP,
                          int endPort)
@@ -28,7 +29,7 @@ public class FTRapidPacket implements Serializable {
     public FTRapidPacket(byte[] data) {
         ByteArrayInputStream byteArray = new ByteArrayInputStream(data);
         ObjectInput in = null;
-        Object o = null;
+        Object o;
         try {
             in = new ObjectInputStream(byteArray);
             o = in.readObject();
@@ -42,6 +43,7 @@ public class FTRapidPacket implements Serializable {
             this.endIP = ftRapidPacket.getEndIP();
             this.endPort = ftRapidPacket.getEndPort();
         } catch(Exception ex){
+            System.out.println(ex.getClass());
             System.out.println("Bytes Error");
         } finally {
             try {
@@ -54,7 +56,7 @@ public class FTRapidPacket implements Serializable {
 
     public byte[] convertToBytes() {
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
-        ObjectOutput out = null;
+        ObjectOutput out;
         byte[] data = null;
         try {
             out = new ObjectOutputStream(bos);
@@ -74,68 +76,46 @@ public class FTRapidPacket implements Serializable {
     }
 
     public void print() {
-        System.out.println("##### FTPacket #####");
-        System.out.println("Type: " + this.type);
+        StringBuilder packetInfo = new StringBuilder();
+        packetInfo.append("\n##### FTPacket #####\n");
+        packetInfo.append("Type: ").append(this.type).append("\n");
         switch (this.type) {
             case "FileList":
-                System.out.println("Files: " + Arrays.toString(this.fileList));
+                packetInfo.append("Files: ").append(Arrays.toString(this.fileList.toArray())).append("\n");
                 break;
             case "RequestFiles":
-                System.out.println("Files: " + Arrays.toString(this.requestFiles));
+                packetInfo.append("Files: ").append(Arrays.toString(this.requestFiles.toArray())).append("\n");
                 break;
             case "FileChunk":
-                System.out.println("Filename: " + this.fileChunk.getFileName());
-                System.out.println("Chunk Sequence Number: " + this.fileChunk.getChunkSequenceNumber());
+                packetInfo.append("Filename: ").append(this.fileChunk.getFileName()).append("\n");
+                packetInfo.append("Chunk Sequence Number: ").append(this.fileChunk.getChunkSequenceNumber()).append("\n");
                 break;
         }
-        System.out.println("####################");
+        packetInfo.append("####################\n");
+        System.out.println(packetInfo);
     }
 
     public String getType() {
         return this.type;
     }
 
-    public void setType(String type) {
-        this.type = type;
-    }
-
-    public String[] getFileList() {
+    public List<FileInfo> getFileList() {
         return this.fileList;
     }
 
-    public void setFileList(String[] fileList) {
-        this.fileList = fileList;
-    }
-
-    public String[] getRequestFiles() {
+    public List<FileInfo> getRequestFiles() {
         return this.requestFiles;
-    }
-
-    public void setRequestFiles(String[] requestFiles) {
-        this.requestFiles = requestFiles;
     }
 
     public FileChunk getFileChunk() {
         return this.fileChunk;
     }
 
-    public void setFileChunk(FileChunk fileChunk) {
-        this.fileChunk = fileChunk;
-    }
-
     public InetAddress getEndIP() {
         return this.endIP;
     }
 
-    public void setEndIP(InetAddress endIP) {
-        this.endIP = endIP;
-    }
-
     public int getEndPort() {
         return this.endPort;
-    }
-
-    public void setEndPort(int endPort) {
-        this.endPort = endPort;
     }
 }
