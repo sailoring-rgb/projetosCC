@@ -15,7 +15,7 @@ public class TCPConnection extends Thread{
 
     public void run() {
         try {
-            ServerSocket serverSocket = new ServerSocket(8080);
+            ServerSocket serverSocket = new ServerSocket(8888);
             System.out.println("Listening for TCP connections on port " + serverSocket.getLocalPort() + " ...");
             while (true) {
                 Socket client = serverSocket.accept();
@@ -47,15 +47,19 @@ public class TCPConnection extends Thread{
             out.println("<h1>FT-Rapid</h1>");
             out.println("<h3>Status: <span style='color: green'>Running</span></h3>");
             out.println("<h2>Files</h2>");
-            out.println("<table>");
-            out.println("<tr><th>File Name</th><th>Size(Bytes)</th><th>Last Modified</th></tr>");
-            for(FileInfo fileInfo : fileInfoList) {
-                String fileInfoString = "<tr><td>" + fileInfo.getName() + "</td>" +
-                                            "<td>" + fileInfo.getSize() + "</td>" +
-                                            "<td>" + fileInfo.getLastModified() + "</td></tr>";
-                out.println(fileInfoString);
+            if(fileInfoList.size() == 0) {
+                out.println("No files.");
+            } else {
+                out.println("<table>");
+                out.println("<tr><th>File Name</th><th>Size(Bytes)</th><th>Last Modified</th></tr>");
+                for (FileInfo fileInfo : fileInfoList) {
+                    String fileInfoString = "<tr><td>" + fileInfo.getName() + "</td>" +
+                            "<td>" + fileInfo.getSize() + "</td>" +
+                            "<td>" + fileInfo.getLastModified() + "</td></tr>";
+                    out.println(fileInfoString);
+                }
+                out.println("</table>");
             }
-            out.println("</table>");
             out.println("</div>");
             out.flush();
             out.close();

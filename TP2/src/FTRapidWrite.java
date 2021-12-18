@@ -18,11 +18,11 @@ public class FTRapidWrite extends Thread{
     public void run() {
         try {
             while (true) {
-                FTRapidPacket ftRapidPacket = new FTRapidPacket("FileList", this.fileManager.getFileList(), null, null, this.endIP, this.endPort);
+                FTRapidPacket ftRapidPacket = new FTRapidPacket(PacketType.FILE_LIST, fileManager.getFileList(), null, null, endIP, endPort, fileManager.getSecret());
                 byte[] buffer = ftRapidPacket.convertToBytes();
                 DatagramPacket out = new DatagramPacket(buffer, buffer.length, ftRapidPacket.getEndIP(), ftRapidPacket.getEndPort());
 
-                //System.out.println("Sending Packet via UDP on Port " + this.socket.getLocalPort() + " to Port " + this.endPort);
+                System.out.println(ftRapidPacket.toString(false));
                 socket.send(out);
 
                 Thread.sleep(5*1000);

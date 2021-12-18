@@ -3,10 +3,9 @@ import java.net.DatagramSocket;
 import java.net.InetAddress;
 
 public class FFSync {
-    private static File folder = null;
-    private static String peerID = null;
-    private static int peerPort;
-    private static int myPort;
+    private static File folder;
+    private static String peerIP;
+    private static String secret = "secret";
 
     public static void main(String[] args) {
         System.out.println("Started FFSync!");
@@ -15,16 +14,16 @@ public class FFSync {
 
         try {
             //FileManager responsible for all the file related operations
-            FileManager fileManager = new FileManager(folder);
+            FileManager fileManager = new FileManager(folder, secret);
 
             //TCP connection to handle HTTP requests
             TCPConnection tcpConnection = new TCPConnection(fileManager);
             tcpConnection.start();
 
             //UPD connection to handle FTRapid Protocol
-            DatagramSocket ds = new DatagramSocket(myPort);
+            DatagramSocket ds = new DatagramSocket(8888);
             FTRapidRead udpRead = new FTRapidRead(ds, fileManager);
-            FTRapidWrite udpWrite = new FTRapidWrite(ds, fileManager, InetAddress.getByName(peerID), peerPort);
+            FTRapidWrite udpWrite = new FTRapidWrite(ds, fileManager, InetAddress.getByName(peerIP), 8888);
             udpRead.start();
             udpWrite.start();
 
@@ -59,30 +58,32 @@ public class FFSync {
             System.out.println("ERROR: Folder directory invalid.");
             return false;
         }
-        FFSync.folder = f;
+        folder = f;
 
         if(numArgs < 2 || args[1] == null || args[1].trim().isEmpty()) {
             System.out.println("ERROR: Peer IP is missing.");
             return false;
         }
-        FFSync.peerID = args[1];
 
-        if(numArgs < 3 || args[2] == null || args[2].trim().isEmpty()) {
-            System.out.println("ERROR: Peer Port is missing.");
+        try {
+            boolean isIpReachable = InetAddress.getByName(args[1]).isReachable(50);
+            if(!isIpReachable) {
+                System.out.println("ERROR: Peer IP is unreachable.");
+                return false;
+            }
+        } catch (Exception e) {
+            System.out.println("ERROR: Peer IP is invalid.");
             return false;
         }
-        FFSync.peerPort = Integer.parseInt(args[2]);
+        peerIP = args[1];
 
-        if(numArgs < 4 || args[3] == null || args[3].trim().isEmpty()) {
-            System.out.println("ERROR: My Port is missing.");
-            return false;
+        if(numArgs > 2 && args[2] != null && !args[2].trim().isEmpty()) {
+            secret = args[2];
         }
-        FFSync.myPort = Integer.parseInt(args[3]);
 
         System.out.println("Folder Directory: " + folder.getAbsolutePath());
-        System.out.println("Peer IP: " + peerID);
-        System.out.println("Peer Port: " + peerPort);
-        System.out.println("My Port: " + myPort);
+        System.out.println("Peer IP: " + peerIP);
+
         return true;
     }
 }

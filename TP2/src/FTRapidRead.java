@@ -16,10 +16,9 @@ public class FTRapidRead extends Thread{
         try {
             while (true) {
                 DatagramPacket packet = new DatagramPacket(this.buffer,this.buffer.length);
-
                 this.socket.receive(packet);
-                //System.out.println("-> Received UDP Connection!");
 
+                System.out.println("UDP connection received.");
                 FTRapidPacket ftPacket = new FTRapidPacket(packet.getData());
                 FTRapidHandlePacket handlePacket = new FTRapidHandlePacket(this.socket, fileManager, packet.getAddress(), packet.getPort(), ftPacket);
                 handlePacket.start();

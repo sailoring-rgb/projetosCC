@@ -5,17 +5,24 @@ import java.io.IOException;
 import java.util.*;
 
 public class FileManager {
-    File folder;
-    Map<String, Map<Integer,FileChunk>> filesBeingReceived;
-    Map<String, Map<Integer,FileChunk>> filesBeingSent;
+    private final File folder;
+    private final Map<String, Map<Integer,FileChunk>> filesBeingReceived;
+    private final Map<String, Map<Integer,FileChunk>> filesBeingSent;
+    private final String secret;
 
-    public FileManager(File folder) {
+    public FileManager(File folder, String secret) {
         this.folder = folder;
         this.filesBeingReceived = new HashMap<>();
         this.filesBeingSent = new HashMap<>();
+        this.secret = secret;
     }
 
-    //Get list of files in the folder (name, length and lastModified)
+    //Check if local secret equals packet secret
+    public boolean checkSecret(FTRapidPacket packet) {
+        return this.secret.equals(packet.getSecret());
+    }
+
+    //Get list of files in the local folder (name, length and lastModified)
     public List<FileInfo> getFileList() {
         List<FileInfo> fileInfoList = new ArrayList<>();
         for(File f : folder.listFiles()) {
@@ -197,9 +204,13 @@ public class FileManager {
         System.out.println(string);
     }
 
+    public String getSecret() {
+        return this.secret;
+    }
+
     public static void main(String[] args) throws Exception{
         File folder = new File("folder1");
-        FileManager fileManager = new FileManager(folder);
+        FileManager fileManager = new FileManager(folder, "secret");
         FileInfo fileInfo = new FileInfo("Twitter-Logo.png", 20000, 1887326);
         List<FileChunk> fileChunks = fileManager.generateFileChunks(fileInfo);
         for(FileChunk chunk: fileChunks) {

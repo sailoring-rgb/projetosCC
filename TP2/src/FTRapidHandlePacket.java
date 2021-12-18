@@ -20,8 +20,8 @@ public class FTRapidHandlePacket extends Thread{
     }
 
     public void run() {
-        if(ftPacket == null) {
-            System.out.println("Wrong Packet Format!");
+        if(!fileManager.checkSecret(ftPacket)) {
+            System.out.println("SECURITY WARNING: Shared secret not matching!");
             return;
         }
         System.out.println(ftPacket.toString(true));
@@ -29,22 +29,22 @@ public class FTRapidHandlePacket extends Thread{
         FTRapidPacket responsePacket;
 
         //Check packet type
-        String packetType = ftPacket.getType();
+        PacketType packetType = ftPacket.getType();
         switch (packetType) {
             //Received the list of files in the other system
-            case "FileList":
+            case FILE_LIST:
                 //Compare the list with the current list on out folder
                 List<FileInfo> filesMissing = fileManager.getFilesMissing(ftPacket.getFileList());
                 //If there is no files missing, do nothing
                 if (filesMissing.size() == 0) break;
                 //Else ask for files
-                responsePacket = new FTRapidPacket("RequestFiles", null, filesMissing, null, this.endIP, this.endPort);
+                responsePacket = new FTRapidPacket(PacketType.REQUEST_FILES, null, filesMissing, null, endIP, endPort, fileManager.getSecret());
                 sendPacket(responsePacket);
                 //Add files to the list of files being received
                 fileManager.addFilesBeingReceived(filesMissing);
                 break;
             //Received a files request
-            case "RequestFiles":
+            case REQUEST_FILES:
                 //Send requested files
                 List<FileInfo> requestedFileNames = ftPacket.getRequestFiles();
                 try {
@@ -64,17 +64,17 @@ public class FTRapidHandlePacket extends Thread{
                                     long startTime = System.nanoTime();
 
                                     for (FileChunk chunk : fileChunks) {
-                                        FTRapidPacket responsePacket = new FTRapidPacket("FileChunk", null, null, chunk, endIP, endPort);
+                                        FTRapidPacket responsePacket = new FTRapidPacket(PacketType.FILE_CHUNK, null, null, chunk, endIP, endPort, fileManager.getSecret());
                                         sendPacket(responsePacket);
                                     }
 
-                                    //Check if all acks were received, if not, resend the chunks not acknowledged
+                                    //Check if all the chunks were acknowledged, if not, resend the chunks not acknowledged
                                     Thread.sleep(50);
                                     while(!fileManager.allFileChunksAcknowledged(fileName)) {
                                         System.out.println("WAITING FOR FILE: " + fileName);
                                         List<FileChunk> notAckChunks = fileManager.getFileChunksNotAcknowledged(fileName);
                                         for(FileChunk chunk : notAckChunks) {
-                                            FTRapidPacket resendPacket = new FTRapidPacket("FileChunk", null, null, chunk, endIP, endPort);
+                                            FTRapidPacket resendPacket = new FTRapidPacket(PacketType.FILE_CHUNK, null, null, chunk, endIP, endPort, fileManager.getSecret());
                                             sendPacket(resendPacket);
                                         }
                                         Thread.sleep(50);
@@ -104,20 +104,20 @@ public class FTRapidHandlePacket extends Thread{
                 }
                 break;
             //Received a file chunk, send ack
-            case "FileChunk":
+            case FILE_CHUNK:
                 try {
                     FileChunk chunk = ftPacket.getFileChunk();
                     fileManager.addFileChunk(chunk);
                     //Create chunk without the data
                     FileChunk ackChunk = new FileChunk(null, chunk.getFileInfo(), chunk.getChunkSequenceNumber(), chunk.getNumChunks());
-                    responsePacket = new FTRapidPacket("Ack", null, null, ackChunk, endIP, endPort);
+                    responsePacket = new FTRapidPacket(PacketType.CHUNK_ACK, null, null, ackChunk, endIP, endPort, fileManager.getSecret());
                     sendPacket(responsePacket);
                 } catch (Exception e) {
                     System.out.println(e.getMessage());
                 }
                 break;
             //Received an ack
-            case "Ack":
+            case CHUNK_ACK:
                 fileManager.acknowledgeFileChunk(ftPacket.getFileChunk());
                 break;
             //Unknown request
@@ -127,14 +127,15 @@ public class FTRapidHandlePacket extends Thread{
     }
 
     public void sendPacket(FTRapidPacket packet) {
-        byte[] buffer = packet.convertToBytes();
-        DatagramPacket out = new DatagramPacket(buffer, buffer.length, packet.getEndIP(), packet.getEndPort());
-
         try {
-            //System.out.println(packet.toString(false));
-            //System.out.println("Sending Packet " + packet.getType() + " via UDP on Port " + this.socket.getLocalPort() + " to Port " + this.endPort);
+            byte[] buffer = packet.convertToBytes();
+            DatagramPacket out = new DatagramPacket(buffer, buffer.length, packet.getEndIP(), packet.getEndPort());
+
             int random = ThreadLocalRandom.current().nextInt(1, 11);
-            if(random <= 8) socket.send(out);
+            if(random <= 8) {
+                System.out.println(packet.toString(false));
+                socket.send(out);
+            }
         } catch (Exception e) {
             System.out.println(e.getMessage());
         }
