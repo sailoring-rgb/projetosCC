@@ -9,17 +9,19 @@ public class FFSync {
     private static int myPort;
 
     public static void main(String[] args) {
-        System.out.println("START FFSync");
+        System.out.println("Started FFSync!");
 
         if(!checkParams(args)) return;
 
         try {
+            //FileManager responsible for all the file related operations
+            FileManager fileManager = new FileManager(folder);
+
             //TCP connection to handle HTTP requests
-            TCPConnection tcpConnection = new TCPConnection();
+            TCPConnection tcpConnection = new TCPConnection(fileManager);
             tcpConnection.start();
 
             //UPD connection to handle FTRapid Protocol
-            FileManager fileManager = new FileManager(folder);
             DatagramSocket ds = new DatagramSocket(myPort);
             FTRapidRead udpRead = new FTRapidRead(ds, fileManager);
             FTRapidWrite udpWrite = new FTRapidWrite(ds, fileManager, InetAddress.getByName(peerID), peerPort);
@@ -36,7 +38,7 @@ public class FFSync {
     }
 
     public static Boolean checkParams(String[] args) {
-        System.out.println("Checking params.");
+        System.out.println("-> Checking params");
 
         int numArgs = args.length;
 

@@ -42,9 +42,11 @@ public class FTRapidPacket implements Serializable {
             this.fileChunk = ftRapidPacket.getFileChunk();
             this.endIP = ftRapidPacket.getEndIP();
             this.endPort = ftRapidPacket.getEndPort();
-        } catch(Exception ex){
-            System.out.println(ex.getClass());
+        } catch(EOFException ex){
+            System.out.println(ex.getCause());
             System.out.println("Bytes Error");
+        } catch(Exception ex) {
+            System.out.println(ex.getMessage());
         } finally {
             try {
                 if(in != null) in.close();
@@ -75,26 +77,6 @@ public class FTRapidPacket implements Serializable {
         return data;
     }
 
-    public void print() {
-        StringBuilder packetInfo = new StringBuilder();
-        packetInfo.append("\n##### FTPacket #####\n");
-        packetInfo.append("Type: ").append(this.type).append("\n");
-        switch (this.type) {
-            case "FileList":
-                packetInfo.append("Files: ").append(Arrays.toString(this.fileList.toArray())).append("\n");
-                break;
-            case "RequestFiles":
-                packetInfo.append("Files: ").append(Arrays.toString(this.requestFiles.toArray())).append("\n");
-                break;
-            case "FileChunk":
-                packetInfo.append("Filename: ").append(this.fileChunk.getFileName()).append("\n");
-                packetInfo.append("Chunk Sequence Number: ").append(this.fileChunk.getChunkSequenceNumber()).append("\n");
-                break;
-        }
-        packetInfo.append("####################\n");
-        System.out.println(packetInfo);
-    }
-
     public String getType() {
         return this.type;
     }
@@ -117,5 +99,28 @@ public class FTRapidPacket implements Serializable {
 
     public int getEndPort() {
         return this.endPort;
+    }
+
+    public String toString(boolean in) {
+        StringBuilder packetInfo = new StringBuilder();
+        packetInfo.append("##### FTPacket #####");
+        if(in) packetInfo.append(" <-\n");
+        else packetInfo.append(" ->\n");
+        packetInfo.append("Type: ").append(this.type).append("\n");
+        switch (this.type) {
+            case "FileList":
+                packetInfo.append("Files: ").append(Arrays.toString(this.fileList.toArray())).append("\n");
+                break;
+            case "RequestFiles":
+                packetInfo.append("Files: ").append(Arrays.toString(this.requestFiles.toArray())).append("\n");
+                break;
+            case "FileChunk":
+            case "Ack":
+                packetInfo.append("Filename: ").append(this.fileChunk.getFileInfo().getName()).append("\n");
+                packetInfo.append("Chunk Sequence Number: ").append(this.fileChunk.getChunkSequenceNumber()).append("\n");
+                break;
+        }
+        packetInfo.append("####################\n");
+        return packetInfo.toString();
     }
 }

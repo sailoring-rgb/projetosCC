@@ -25,7 +25,7 @@ public class FTRapidWrite extends Thread{
                 //System.out.println("Sending Packet via UDP on Port " + this.socket.getLocalPort() + " to Port " + this.endPort);
                 socket.send(out);
 
-                Thread.sleep(10*1000);
+                Thread.sleep(5*1000);
             }
         } catch (Exception e) {
             System.out.println(e.getMessage());

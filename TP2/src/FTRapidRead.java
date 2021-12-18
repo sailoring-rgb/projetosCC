@@ -3,7 +3,7 @@ import java.net.DatagramSocket;
 
 public class FTRapidRead extends Thread{
     private final DatagramSocket socket;
-    private final byte[] buffer = new byte[1024];
+    private final byte[] buffer = new byte[2024];
     private final FileManager fileManager;
 
     public FTRapidRead(DatagramSocket socket, FileManager fileManager) {
@@ -18,7 +18,7 @@ public class FTRapidRead extends Thread{
                 DatagramPacket packet = new DatagramPacket(this.buffer,this.buffer.length);
 
                 this.socket.receive(packet);
-                System.out.println("-> Received UDP Connection!");
+                //System.out.println("-> Received UDP Connection!");
 
                 FTRapidPacket ftPacket = new FTRapidPacket(packet.getData());
                 FTRapidHandlePacket handlePacket = new FTRapidHandlePacket(this.socket, fileManager, packet.getAddress(), packet.getPort(), ftPacket);

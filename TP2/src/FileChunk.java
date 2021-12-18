@@ -2,14 +2,14 @@ import java.io.Serializable;
 
 public class FileChunk implements Serializable {
     private final byte[] data;
-    private final String fileName;
+    private final FileInfo fileInfo;
     private final int chunkSequenceNumber;
     private final int numChunks;
     private boolean acknowledged;
 
-    public FileChunk(byte[] data, String fileName, int chunkSequenceNumber, int numChunks) {
+    public FileChunk(byte[] data, FileInfo fileInfo, int chunkSequenceNumber, int numChunks) {
         this.data = data;
-        this.fileName = fileName;
+        this.fileInfo = fileInfo;
         this.chunkSequenceNumber = chunkSequenceNumber;
         this.numChunks = numChunks;
     }
@@ -18,8 +18,8 @@ public class FileChunk implements Serializable {
         return this.data;
     }
 
-    public String getFileName() {
-        return this.fileName;
+    public FileInfo getFileInfo() {
+        return this.fileInfo;
     }
 
     public int getChunkSequenceNumber() {
