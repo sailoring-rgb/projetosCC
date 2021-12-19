@@ -17,26 +17,27 @@ public class FFSync {
             FileManager fileManager = new FileManager(folder, secret);
 
             //TCP connection to handle HTTP requests
-            TCPConnection tcpConnection = new TCPConnection(fileManager);
-            tcpConnection.start();
+            Monitor monitor = new Monitor(fileManager);
+            monitor.start();
 
-            //UPD connection to handle FTRapid Protocol
+            //UDP connections to handle FTRapid Protocol
             DatagramSocket ds = new DatagramSocket(8888);
-            FTRapidRead udpRead = new FTRapidRead(ds, fileManager);
-            FTRapidWrite udpWrite = new FTRapidWrite(ds, fileManager, InetAddress.getByName(peerIP), 8888);
-            udpRead.start();
-            udpWrite.start();
+            FTRapidRead ftRapidRead = new FTRapidRead(ds, fileManager);
+            FTRapidWrite ftRapidWrite = new FTRapidWrite(ds, fileManager, InetAddress.getByName(peerIP), 8888);
+            ftRapidRead.start();
+            ftRapidWrite.start();
 
-            tcpConnection.join();
-            udpRead.join();
-            udpWrite.join();
+            monitor.join();
+            ftRapidRead.join();
+            ftRapidWrite.join();
         } catch (Exception e) {
             System.out.println(e.getMessage());
         }
 
     }
 
-    public static Boolean checkParams(String[] args) {
+    //Validate the params received for the correct work of the application
+    public static boolean checkParams(String[] args) {
         System.out.println("-> Checking params");
 
         int numArgs = args.length;

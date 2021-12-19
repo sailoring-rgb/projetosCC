@@ -6,10 +6,10 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.List;
 
-public class TCPConnection extends Thread{
+public class Monitor extends Thread{
     private final FileManager fileManager;
 
-    public TCPConnection(FileManager fileManager) {
+    public Monitor(FileManager fileManager) {
         this.fileManager = fileManager;
     }
 

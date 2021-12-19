@@ -21,7 +21,7 @@ public class FTRapidHandlePacket extends Thread{
 
     public void run() {
         if(!fileManager.checkSecret(ftPacket)) {
-            System.out.println("SECURITY WARNING: Shared secret not matching!");
+            System.out.println("SECURITY WARNING: Shared secret not matching!\n");
             return;
         }
         System.out.println(ftPacket.toString(true));
@@ -71,7 +71,7 @@ public class FTRapidHandlePacket extends Thread{
                                     //Check if all the chunks were acknowledged, if not, resend the chunks not acknowledged
                                     Thread.sleep(50);
                                     while(!fileManager.allFileChunksAcknowledged(fileName)) {
-                                        System.out.println("WAITING FOR FILE: " + fileName);
+                                        System.out.println("-> Waiting for chunk acks: " + fileName + "\n");
                                         List<FileChunk> notAckChunks = fileManager.getFileChunksNotAcknowledged(fileName);
                                         for(FileChunk chunk : notAckChunks) {
                                             FTRapidPacket resendPacket = new FTRapidPacket(PacketType.FILE_CHUNK, null, null, chunk, endIP, endPort, fileManager.getSecret());
