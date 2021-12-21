@@ -1,6 +1,6 @@
 # CC
 
-Projetos de Comunicações por Computador 20/21
+Projetos de Comunicações por Computador 21/22
 
 Classificação do TP1: .../20\
 Classificação do TP2: .../20\
