@@ -68,7 +68,7 @@ public class FTRapidHandlePacket extends Thread{
                                     }
 
                                     //Check if all the chunks were acknowledged, if not, resend the chunks not acknowledged
-                                    Thread.sleep(100);
+                                    Thread.sleep(1000);
                                     while(!fileManager.allFileChunksAcknowledged(fileName)) {
                                         System.out.println("-> Waiting for chunk acks: " + fileName + "\n");
                                         List<FileChunk> notAckChunks = fileManager.getFileChunksNotAcknowledged(fileName);
@@ -76,7 +76,7 @@ public class FTRapidHandlePacket extends Thread{
                                             FTRapidPacket resendPacket = new FTRapidPacket(PacketType.FILE_CHUNK, null, null, chunk, endIP, endPort, fileManager.getSecret());
                                             sendPacket(resendPacket);
                                         }
-                                        Thread.sleep(100);
+                                        Thread.sleep(1000);
                                     }
 
                                     //Stop timer now or when we receive the last ack
@@ -109,7 +109,7 @@ public class FTRapidHandlePacket extends Thread{
                     //Save chunk
                     fileManager.addFileChunk(chunk);
                     //Create chunk without the data
-                    FileChunk ackChunk = new FileChunk(null, chunk.getFileInfo(), chunk.getChunkSequenceNumber(), chunk.getNumChunks());
+                    FileChunk ackChunk = new FileChunk(null, chunk.getFileInfo(), chunk.getChunkSequenceNumber(), chunk.getNumChunks(), null);
                     responsePacket = new FTRapidPacket(PacketType.CHUNK_ACK, null, null, ackChunk, endIP, endPort, fileManager.getSecret());
                     sendPacket(responsePacket);
                 } catch (Exception e) {

@@ -86,18 +86,19 @@ public class FileManager {
 
         if(!file.exists() || file.isDirectory()) throw new Exception("File not found!");
 
+        long currentTime = System.nanoTime();
+
         int CHUNK_SIZE = 512;
         byte[] fileByteArray = readFileToByteArray(file);
         List<FileChunk> dataChunks = new ArrayList<>();
         int numChunks = (int) Math.ceil(fileByteArray.length / 512.0);
         int chunkSequenceNumber = 1;
         for (int i = 0; i < fileByteArray.length; i = i + CHUNK_SIZE) {
-            //byte[] chunk = new byte[CHUNK_SIZE];
             int length = CHUNK_SIZE;
             if((i + CHUNK_SIZE) >= fileByteArray.length) length = fileByteArray.length - i;
             byte[] data = new byte[length];
             System.arraycopy(fileByteArray, i, data, 0, length);
-            FileChunk fileChunk = new FileChunk(data, fileInfo, chunkSequenceNumber, numChunks);
+            FileChunk fileChunk = new FileChunk(data, fileInfo, chunkSequenceNumber, numChunks, currentTime);
             dataChunks.add(fileChunk);
             chunkSequenceNumber++;
         }
@@ -144,7 +145,7 @@ public class FileManager {
 
         //If all the chunks have arrived, create/rewrite file
         if(filesBeingReceived.get(fileName).size() == fileChunk.getNumChunks()) {
-            this.createFile(fileChunk.getFileInfo());
+            this.createFile(fileChunk.getFileInfo(), fileChunk.getCreated());
         }
     }
 
@@ -180,9 +181,23 @@ public class FileManager {
         return chunks;
     }
 
-    //Create/rewrite file received
-    public synchronized void createFile(FileInfo fileInfo) throws Exception{
+    //Create/rewrite file received and calculate metrics
+    public synchronized void createFile(FileInfo fileInfo, long created) throws Exception{
         String fileName = fileInfo.getName();
+        //Calculate transfer time and throughput
+        long elapsedNanos = System.nanoTime() - created;
+        double elapsedSeconds = elapsedNanos / 1_000_000_000.0;
+
+        long fileSize = fileInfo.getSize();
+        double throughput = (fileSize * 8) / elapsedSeconds;
+
+        String string = "-> File Received\n" +
+                "Name: " + fileName + "\n" +
+                "Size: " + fileSize + " B\n" +
+                "Transfer time: " + elapsedSeconds + " seconds\n" +
+                "Throughput: " + throughput + " bits/second\n";
+        System.out.println(string);
+
         File file = new File(this.folder.getAbsolutePath() + "/" + fileName);
 
         //If file exists, use 'overwrite' in FileOutputStream, else use 'append'
@@ -197,11 +212,6 @@ public class FileManager {
         outToFile.close();
         file.setLastModified(fileInfo.getLastModified());
         filesBeingReceived.remove(fileName);
-
-        String string = "-> File Received: \n" +
-                "Name: " + fileName + "\n" +
-                "Size: " + fileInfo.getSize() + " B\n";
-        System.out.println(string);
     }
 
     public String getSecret() {
