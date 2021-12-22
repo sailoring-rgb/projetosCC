@@ -157,10 +157,7 @@ public class FileManager {
         filesBeingReceived.get(fileName).put(fileChunk.getChunkSequenceNumber(), fileChunk);
         System.out.println(filesBeingReceived.get(fileName).size() + " of " + fileChunk.getNumChunks());
 
-        //If all the chunks have arrived, create/rewrite file
-        if(filesBeingReceived.get(fileName).size() == fileChunk.getNumChunks()) {
-            this.createFile(fileChunk.getFileInfo(), fileChunk.getCreated());
-        }
+        this.createFile(fileChunk);
     }
 
     //Set a file chunk as acknowledged from a file being sent
@@ -195,39 +192,42 @@ public class FileManager {
         return chunks;
     }
 
-    //Create/rewrite file received and calculate metrics
-    public void createFile(FileInfo fileInfo, long created) throws Exception{
-        String fileName = fileInfo.getName();
-        //Calculate transfer time and throughput
-        long elapsedNanos = System.nanoTime() - created;
-        double elapsedSeconds = elapsedNanos / 1_000_000_000.0;
+    //If all the chunks have arrived create/rewrite file received and calculate metrics
+    public synchronized void createFile(FileChunk fileChunk) throws Exception{
+        String fileName = fileChunk.getFileInfo().getName();
+        if(filesBeingReceived.containsKey(fileName) && filesBeingReceived.get(fileName).size() == fileChunk.getNumChunks()) {
+            FileInfo fileInfo = fileChunk.getFileInfo();
+            //Calculate transfer time and throughput
+            long elapsedNanos = System.nanoTime() - fileChunk.getCreated();
+            double elapsedSeconds = elapsedNanos / 1_000_000_000.0;
 
-        long fileSize = fileInfo.getSize();
-        double throughput = (fileSize * 8) / elapsedSeconds;
+            long fileSize = fileInfo.getSize();
+            double throughput = (fileSize * 8) / elapsedSeconds;
 
-        String string = "-> File Received\n" +
-                "Name: " + fileName + "\n" +
-                "Size: " + fileSize + " B\n" +
-                "Transfer time: " + elapsedSeconds + " seconds\n" +
-                "Throughput: " + throughput + " bits/second\n";
-        System.out.println(string);
-        this.writeToConsole(string);
+            String string = "-> File Received\n" +
+                    "Name: " + fileName + "\n" +
+                    "Size: " + fileSize + " B\n" +
+                    "Transfer time: " + elapsedSeconds + " seconds\n" +
+                    "Throughput: " + throughput + " bits/second\n";
+            System.out.println(string);
+            this.writeToConsole(string);
 
-        File file = new File(this.folder.getAbsolutePath() + "/" + fileName);
+            File file = new File(this.folder.getAbsolutePath() + "/" + fileName);
 
-        //If file exists, use 'overwrite' in FileOutputStream, else use 'append'
-        boolean append = !file.exists();
-        FileOutputStream outToFile = new FileOutputStream(file, append);
+            //If file exists, use 'overwrite' in FileOutputStream, else use 'append'
+            boolean append = !file.exists();
+            FileOutputStream outToFile = new FileOutputStream(file, append);
 
-        //Order chunks by 'sequenceNumber' and write them to the file
-        SortedSet<Integer> keys = new TreeSet<>(filesBeingReceived.get(fileName).keySet());
-        for (Integer sequenceNumber : keys) {
-            outToFile.write(filesBeingReceived.get(fileName).get(sequenceNumber).getData());
+            //Order chunks by 'sequenceNumber' and write them to the file
+            SortedSet<Integer> keys = new TreeSet<>(filesBeingReceived.get(fileName).keySet());
+            for (Integer sequenceNumber : keys) {
+                outToFile.write(filesBeingReceived.get(fileName).get(sequenceNumber).getData());
+            }
+            outToFile.close();
+            file.setLastModified(fileInfo.getLastModified());
+            filesBeingReceived.remove(fileName);
+            if (filesBeingReceived.size() == 0) this.writeToConsole("Synchronized!");
         }
-        outToFile.close();
-        file.setLastModified(fileInfo.getLastModified());
-        filesBeingReceived.remove(fileName);
-        if(filesBeingReceived.size() == 0) this.writeToConsole("Synchronized!");
     }
 
     public String getSecret() {
