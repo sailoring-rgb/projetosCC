@@ -2,7 +2,6 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.util.List;
-import java.util.concurrent.ThreadLocalRandom;
 
 public class FTRapidHandlePacket extends Thread{
     private final DatagramSocket socket;
@@ -69,7 +68,7 @@ public class FTRapidHandlePacket extends Thread{
                                     }
 
                                     //Check if all the chunks were acknowledged, if not, resend the chunks not acknowledged
-                                    Thread.sleep(50);
+                                    Thread.sleep(100);
                                     while(!fileManager.allFileChunksAcknowledged(fileName)) {
                                         System.out.println("-> Waiting for chunk acks: " + fileName + "\n");
                                         List<FileChunk> notAckChunks = fileManager.getFileChunksNotAcknowledged(fileName);
@@ -77,7 +76,7 @@ public class FTRapidHandlePacket extends Thread{
                                             FTRapidPacket resendPacket = new FTRapidPacket(PacketType.FILE_CHUNK, null, null, chunk, endIP, endPort, fileManager.getSecret());
                                             sendPacket(resendPacket);
                                         }
-                                        Thread.sleep(50);
+                                        Thread.sleep(100);
                                     }
 
                                     //Stop timer now or when we receive the last ack
@@ -85,7 +84,7 @@ public class FTRapidHandlePacket extends Thread{
                                     double elapsedSeconds = elapsedNanos / 1_000_000_000.0;
 
                                     long fileSize = file.getSize();
-                                    double throughput = fileSize / elapsedSeconds;
+                                    double throughput = (fileSize * 8) / elapsedSeconds;
 
                                     String string = "-> File Sent\n" +
                                             "Name: " + fileName + "\n" +
@@ -107,6 +106,7 @@ public class FTRapidHandlePacket extends Thread{
             case FILE_CHUNK:
                 try {
                     FileChunk chunk = ftPacket.getFileChunk();
+                    //Save chunk
                     fileManager.addFileChunk(chunk);
                     //Create chunk without the data
                     FileChunk ackChunk = new FileChunk(null, chunk.getFileInfo(), chunk.getChunkSequenceNumber(), chunk.getNumChunks());
@@ -131,11 +131,8 @@ public class FTRapidHandlePacket extends Thread{
             byte[] buffer = packet.convertToBytes();
             DatagramPacket out = new DatagramPacket(buffer, buffer.length, packet.getEndIP(), packet.getEndPort());
 
-            int random = ThreadLocalRandom.current().nextInt(1, 11);
-            if(random <= 8) {
-                System.out.println(packet.toString(false));
-                socket.send(out);
-            }
+            socket.send(out);
+            System.out.println(packet.toString(false));
         } catch (Exception e) {
             System.out.println(e.getMessage());
         }

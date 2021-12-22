@@ -25,7 +25,7 @@ public class FTRapidWrite extends Thread{
                 System.out.println(ftRapidPacket.toString(false));
                 socket.send(out);
 
-                Thread.sleep(5*1000);
+                Thread.sleep(2*1000);
             }
         } catch (Exception e) {
             System.out.println(e.getMessage());
