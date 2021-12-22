@@ -1,7 +1,6 @@
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
+import jdk.swing.interop.SwingInterOpUtils;
+
+import java.io.*;
 import java.util.*;
 
 public class FileManager {
@@ -9,12 +8,24 @@ public class FileManager {
     private final Map<String, Map<Integer,FileChunk>> filesBeingReceived;
     private final Map<String, Map<Integer,FileChunk>> filesBeingSent;
     private final String secret;
+    private final PrintStream console;
 
     public FileManager(File folder, String secret) {
         this.folder = folder;
         this.filesBeingReceived = new HashMap<>();
         this.filesBeingSent = new HashMap<>();
         this.secret = secret;
+        this.console = System.out;
+        try {
+            PrintStream logFile = new PrintStream("./logs.txt");
+            System.setOut(logFile);
+        } catch (Exception e) {
+            console.println(e.getMessage());
+        }
+    }
+
+    public void writeToConsole(String string) {
+        console.println(string);
     }
 
     //Check if local secret equals packet secret
@@ -22,11 +33,11 @@ public class FileManager {
         return this.secret.equals(packet.getSecret());
     }
 
-    //Get list of files in the local folder (name, length and lastModified)
+    //Get list of files in the local folder (name, length and lastModified) except logs.txt
     public List<FileInfo> getFileList() {
         List<FileInfo> fileInfoList = new ArrayList<>();
         for(File f : folder.listFiles()) {
-            if(f.isFile()) {
+            if(f.isFile() && !f.getName().equals("logs.txt")) {
                 FileInfo fileInfo = new FileInfo(f.getName(), f.length(), f.lastModified());
                 fileInfoList.add(fileInfo);
             }
@@ -136,7 +147,7 @@ public class FileManager {
     }
 
     //Add file chunk to the 'filesBeingReceived' Map
-    public synchronized void addFileChunk(FileChunk fileChunk) throws Exception {
+    public void addFileChunk(FileChunk fileChunk) throws Exception {
         String fileName = fileChunk.getFileInfo().getName();
         if(!filesBeingReceived.containsKey(fileName)) return;
 
@@ -182,7 +193,7 @@ public class FileManager {
     }
 
     //Create/rewrite file received and calculate metrics
-    public synchronized void createFile(FileInfo fileInfo, long created) throws Exception{
+    public void createFile(FileInfo fileInfo, long created) throws Exception{
         String fileName = fileInfo.getName();
         //Calculate transfer time and throughput
         long elapsedNanos = System.nanoTime() - created;
@@ -197,6 +208,7 @@ public class FileManager {
                 "Transfer time: " + elapsedSeconds + " seconds\n" +
                 "Throughput: " + throughput + " bits/second\n";
         System.out.println(string);
+        this.writeToConsole(string);
 
         File file = new File(this.folder.getAbsolutePath() + "/" + fileName);
 
@@ -212,20 +224,10 @@ public class FileManager {
         outToFile.close();
         file.setLastModified(fileInfo.getLastModified());
         filesBeingReceived.remove(fileName);
+        if(filesBeingReceived.size() == 0) this.writeToConsole("Synchronized!");
     }
 
     public String getSecret() {
         return this.secret;
-    }
-
-    public static void main(String[] args) throws Exception{
-        File folder = new File("folder1");
-        FileManager fileManager = new FileManager(folder, "secret");
-        FileInfo fileInfo = new FileInfo("Twitter-Logo.png", 20000, 1887326);
-        List<FileChunk> fileChunks = fileManager.generateFileChunks(fileInfo);
-        for(FileChunk chunk: fileChunks) {
-            System.out.println(chunk.getData().length + " B");
-            System.out.println(chunk.getNumChunks());
-        }
     }
 }

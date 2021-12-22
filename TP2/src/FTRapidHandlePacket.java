@@ -41,10 +41,12 @@ public class FTRapidHandlePacket extends Thread{
                 sendPacket(responsePacket);
                 //Add files to the list of files being received
                 fileManager.addFilesBeingReceived(filesMissing);
+                fileManager.writeToConsole("Transferring files...");
                 break;
             //Received a files request
             case REQUEST_FILES:
                 //Send requested files
+                fileManager.writeToConsole("Sending files...");
                 List<FileInfo> requestedFileNames = ftPacket.getRequestFiles();
                 try {
                     for (FileInfo file: requestedFileNames) {
@@ -92,6 +94,7 @@ public class FTRapidHandlePacket extends Thread{
                                             "Transfer time: " + elapsedSeconds + " seconds\n" +
                                             "Throughput: " + throughput + " bits/second\n";
                                     System.out.println(string);
+                                    fileManager.writeToConsole(string);
                                 } catch (Exception e) {
                                     System.out.println("Error sending file chunk");
                                 }
