@@ -109,7 +109,7 @@ public class FTRapidHandlePacket extends Thread{
                     //Save chunk
                     fileManager.addFileChunk(chunk);
                     //Create chunk without the data
-                    FileChunk ackChunk = new FileChunk(null, chunk.getFileInfo(), chunk.getChunkSequenceNumber(), chunk.getNumChunks(), null);
+                    FileChunk ackChunk = new FileChunk(null, chunk.getFileInfo(), chunk.getChunkSequenceNumber(), chunk.getNumChunks(), chunk.getCreated());
                     responsePacket = new FTRapidPacket(PacketType.CHUNK_ACK, null, null, ackChunk, endIP, endPort, fileManager.getSecret());
                     sendPacket(responsePacket);
                 } catch (Exception e) {

@@ -129,7 +129,7 @@ public class FTRapidPacket implements Serializable {
             case FILE_CHUNK:
             case CHUNK_ACK:
                 packetInfo.append("Filename: ").append(this.fileChunk.getFileInfo().getName()).append("\n");
-                packetInfo.append("Chunk Sequence Number: ").append(this.fileChunk.getChunkSequenceNumber()).append("\n");
+                packetInfo.append("Chunk Sequence Number: ").append(this.fileChunk.getChunkSequenceNumber()).append(" of ").append(this.fileChunk.getNumChunks()).append("\n");
                 break;
         }
         packetInfo.append("####################\n");

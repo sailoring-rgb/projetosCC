@@ -88,10 +88,10 @@ public class FileManager {
 
         long currentTime = System.nanoTime();
 
-        int CHUNK_SIZE = 512;
+        int CHUNK_SIZE = 1024;
         byte[] fileByteArray = readFileToByteArray(file);
         List<FileChunk> dataChunks = new ArrayList<>();
-        int numChunks = (int) Math.ceil(fileByteArray.length / 512.0);
+        int numChunks = (int) Math.ceil(fileByteArray.length / 1024.0);
         int chunkSequenceNumber = 1;
         for (int i = 0; i < fileByteArray.length; i = i + CHUNK_SIZE) {
             int length = CHUNK_SIZE;
