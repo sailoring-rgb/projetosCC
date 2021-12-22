@@ -85,7 +85,7 @@ public class FileManager {
 
     //Check if any file is being received
     public boolean areFilesBeingReceived() {
-        return this.filesBeingReceived.size() == 0;
+        return this.filesBeingReceived.size() > 0;
     }
 
     //Check if file is being sent, if file is in the 'filesBeingSent' Map
