@@ -35,7 +35,10 @@ public class FTRapidHandlePacket extends Thread{
                 //Compare the list with the current list on out folder
                 List<FileInfo> filesMissing = fileManager.getFilesMissing(ftPacket.getFileList());
                 //If there is no files missing, do nothing
-                if (filesMissing.size() == 0) break;
+                if (filesMissing.size() == 0) {
+                    if(!fileManager.areFilesBeingReceived()) fileManager.writeToConsole("Synchronized!");
+                    break;
+                }
                 //Else ask for files
                 responsePacket = new FTRapidPacket(PacketType.REQUEST_FILES, null, filesMissing, null, endIP, endPort, fileManager.getSecret());
                 sendPacket(responsePacket);
@@ -61,9 +64,6 @@ public class FTRapidHandlePacket extends Thread{
                                     //Else generate chunks and send them
                                     List<FileChunk> fileChunks = fileManager.generateFileChunks(file);
 
-                                    //Start timer
-                                    long startTime = System.nanoTime();
-
                                     for (FileChunk chunk : fileChunks) {
                                         FTRapidPacket responsePacket = new FTRapidPacket(PacketType.FILE_CHUNK, null, null, chunk, endIP, endPort, fileManager.getSecret());
                                         sendPacket(responsePacket);
@@ -81,18 +81,9 @@ public class FTRapidHandlePacket extends Thread{
                                         Thread.sleep(1000);
                                     }
 
-                                    //Stop timer now or when we receive the last ack
-                                    long elapsedNanos = System.nanoTime() - startTime;
-                                    double elapsedSeconds = elapsedNanos / 1_000_000_000.0;
-
-                                    long fileSize = file.getSize();
-                                    double throughput = (fileSize * 8) / elapsedSeconds;
-
                                     String string = "-> File Sent\n" +
                                             "Name: " + fileName + "\n" +
-                                            "Size: " + fileSize + " B\n" +
-                                            "Transfer time: " + elapsedSeconds + " seconds\n" +
-                                            "Throughput: " + throughput + " bits/second\n";
+                                            "Size: " + file.getSize() + " B\n";
                                     System.out.println(string);
                                     fileManager.writeToConsole(string);
                                 } catch (Exception e) {

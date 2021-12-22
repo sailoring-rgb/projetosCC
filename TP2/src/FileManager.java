@@ -1,5 +1,3 @@
-import jdk.swing.interop.SwingInterOpUtils;
-
 import java.io.*;
 import java.util.*;
 
@@ -17,7 +15,7 @@ public class FileManager {
         this.secret = secret;
         this.console = System.out;
         try {
-            PrintStream logFile = new PrintStream("./logs.txt");
+            PrintStream logFile = new PrintStream(folder.getAbsolutePath() + "/logs.txt");
             System.setOut(logFile);
         } catch (Exception e) {
             console.println(e.getMessage());
@@ -25,7 +23,7 @@ public class FileManager {
     }
 
     public void writeToConsole(String string) {
-        console.println(string);
+        console.println("\n" + string);
     }
 
     //Check if local secret equals packet secret
@@ -83,6 +81,11 @@ public class FileManager {
                 this.filesBeingReceived.put(fileName, chunkList);
             }
         }
+    }
+
+    //Check if any file is being received
+    public boolean areFilesBeingReceived() {
+        return this.filesBeingReceived.size() == 0;
     }
 
     //Check if file is being sent, if file is in the 'filesBeingSent' Map
