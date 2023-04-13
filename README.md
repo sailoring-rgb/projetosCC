@@ -1,13 +1,13 @@
 # CC
 
-Projetos de Comunicações por Computador 21/22
+Projects accomplished in the scope of <b><i>Computing Communications 21/22</i></b>
 
-Classificação do TP1: 15.8/20\
-Classificação do TP2: 10.0/20\
-Classificação do TP3: 15.2/20
+- <a href="https://github.com/sailoring-rgb/projetosCC/tree/main/TP1">TP1</a> Classification: 15.8/20
+- <a href="https://github.com/sailoring-rgb/projetosCC/tree/main/TP2">TP2</a> Classification: 10.0/20
+- <a href="https://github.com/sailoring-rgb/projetosCC/tree/main/TP3">TP3</a> Classification: 15.2/20
 
-# Autores
+# Authors
 
-- Ana Murta (@AnaMurta10)
-- Ana Henriques (@AnaHenriques01)
-- Ana Canelas (@CatCanelas13)
+- <a href="https://github.com/AnaMurta10">Ana Murta</a>
+- <a href="https://github.com/sailoring-rgb">Ana Henriques</a>
+- <a href="https://github.com/CatCanelas13">Ana Canelas</a>
